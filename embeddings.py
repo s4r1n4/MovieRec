@@ -3,52 +3,61 @@ import numpy as np
 from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import normalize
 from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import SentenceTransformer
+from utils import load_data
 
-# Load CSVs
-movies = pd.read_csv("/ml-latest/movies.csv")
-tags = pd.read_csv("/ml-latest/genome-tags.csv")
-scores = pd.read_csv("/ml-latest/genome-scores.csv")
+# --- Load Datasets ---
+movies, tags, scores = load_data()
 
-# Merge tag names into genome scores
-scores = scores.merge(tags, on="tagId")
+# --- Create Movie-Tag Matrix (movies as rows, tags as columns) ---
+movie_tag_matrix = scores.pivot(index="movieId", columns="tag", values="relevance").fillna(0)
+movie_tag_matrix.to_csv("movie_tag_matrix.csv")
 
-# Pivot to get a tag vector per movie
-tag_matrix = scores.pivot(index="movieId", columns="tag", values="relevance").fillna(0)
-
-# Step 2: Create Tag-Movie Matrix (tags as rows, movies as columns)
-# Pivot the table to create a tag-movie matrix with scores as values
+# --- Create Tag-Movie Matrix (tags as rows, movies as columns) ---
 tag_movie_matrix = scores.pivot(index='tagId', columns='movieId', values='relevance').fillna(0)
-
-#Normalize the matrix so that each tag is a unit vector
 tag_matrix_normalized = normalize(tag_movie_matrix, axis=1)
 
-# Step 3: Dimensionality Reduction using TruncatedSVD (similar to PCA but for sparse/high-dim data)
-n_components = 50  # You can tune this number depending on how many dimensions you want
+# --- Dimensionality Reduction using TruncatedSVD ---
+n_components = 50
 svd = TruncatedSVD(n_components=n_components, random_state=42)
-tag_embeddings = svd.fit_transform(tag_matrix_normalized)
+tag_embeddings_svd = svd.fit_transform(tag_matrix_normalized)
 
-# Step 4: Put the embeddings into a DataFrame with tag names
+# --- Save SVD-based Tag Embeddings ---
 tag_id_to_name = dict(zip(tags['tagId'], tags['tag']))
 tag_names = [tag_id_to_name[tag_id] for tag_id in tag_movie_matrix.index]
-tag_embeddings_df = pd.DataFrame(tag_embeddings, index=tag_names)
+tag_embeddings_df = pd.DataFrame(tag_embeddings_svd, index=tag_names)
 tag_embeddings_df.columns = [f"dim_{i+1}" for i in range(n_components)]
-
-# View the embeddings
-print(tag_embeddings_df.head())
-
-#Save to CSV
 tag_embeddings_df.to_csv("tag_embeddings.csv")
 
+# --- SentenceTransformer Embeddings ---
+tag_list = tags['tag'].tolist()
+model = SentenceTransformer('all-MiniLM-L6-v2')
+tag_embeddings_st = model.encode(tag_list, show_progress_bar=True)
 
-#Find similar tags
-def find_similar_tags(tag, top_n=10):
-    if tag not in tag_embeddings_df.index:
-        print(f"Tag '{tag}' not found.")
-        return
-    vec = tag_embeddings_df.loc[[tag]]
-    sims = cosine_similarity(vec, tag_embeddings_df)[0]
-    top_indices = sims.argsort()[::-1][1:top_n+1]
-    return tag_embeddings_df.index[top_indices]
+# --- Get User Input & Encode ---
+user_input = input("Describe your mood or preferences: ")
+user_vector = model.encode([user_input])[0]
 
-# Example:
-print(find_similar_tags("romance"))
+# --- Compute Similarity between input and all tags ---
+similarities = cosine_similarity([user_vector], tag_embeddings_st)[0]
+tag_similarities = pd.DataFrame({'tag': tag_list, 'similarity': similarities})
+
+# --- Top N Relevant Tags ---
+top_n = 30
+top_tags = tag_similarities.sort_values(by='similarity', ascending=False).head(top_n)
+print("Top Tags:", top_tags['tag'].tolist())
+
+# --- Filter scores for top tagIds ---
+top_tag_ids = tags[tags['tag'].isin(top_tags['tag'])]['tagId'].tolist()
+relevant_scores = scores[scores['tagId'].isin(top_tag_ids)]
+
+# --- Aggregate score per movie ---
+movie_scores = relevant_scores.groupby('movieId')['relevance'].mean().reset_index()
+
+# --- Merge with movie titles ---
+top_movies = movie_scores.merge(movies, on='movieId').sort_values('relevance', ascending=False)
+
+# --- Display Top Movies ---
+print("\n🎬 Top Movie Recommendations:")
+for i, row in top_movies.head(15).iterrows():
+    print(f"{row['title']} (score: {row['relevance']:.3f})")
