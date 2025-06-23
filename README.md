@@ -1,8 +1,8 @@
-# 🎬 Movie Recommender by Mood
+# 🎬 MoodMatch: Movie Recommender by Mood
 
 This is a Streamlit-based web app that recommends movies based on the mood or feeling you describe in plain English. Using semantic embeddings of movie genome tags and user input, it generates a personalized list of film suggestions.
 
-![screenshot](path/to/your/screenshot.png)
+![Screenshot: MoodMatch](Working_Screenshot.png)
 
 ---
 
