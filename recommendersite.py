@@ -7,11 +7,11 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 # --- Load data ---
-tags_df = pd.read_csv('/ml-latest/genome-tags.csv')  # has 'tag' column
+tags_df = pd.read_csv('data/genome-tags.csv')  # has 'tag' column
 tag_list = tags_df['tag'].tolist()
 
-movies = pd.read_csv('/ml-latest/movies.csv')  # ['movieId', 'title']
-movie_tag_matrix = pd.read_csv('/movie_tag_matrix.csv', index_col=0)  # (num_movies, num_tags)
+movies = pd.read_csv('data/movies.csv')  # ['movieId', 'title']
+movie_tag_matrix = pd.read_csv('data/movie_tag_matrix.csv', index_col=0)  # (num_movies, num_tags)
 
 # --- Generate tag embeddings ---
 model = SentenceTransformer('all-MiniLM-L6-v2')
