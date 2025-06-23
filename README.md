@@ -25,5 +25,13 @@ This is a Streamlit-based web app that recommends movies based on the mood or fe
 
 ---
 
-## 📁 Project Structure
+## 📁 Data
+The MovieLens dataset has been used, which can be downloaded from https://grouplens.org/datasets/movielens/latest/
+Download the required files and place them in the data/ folder:
+
+movies.csv
+
+genome-tags.csv
+
+genome-scores.csv
 
