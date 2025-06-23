@@ -6,6 +6,21 @@ This is a Streamlit-based web app that recommends movies based on the mood or fe
 
 ---
 
+## 📁 Project Structure
+
+```MovieRec/
+├── data/
+│ ├── movies.csv
+│ ├── genome-tags.csv
+│ ├── genome-scores.csv
+│ └── movie_tag_matrix.csv
+├── embeddings.py
+├── utils.py
+├── recommendersite.py
+├── requirements.txt
+└── README.md
+```
+
 ## 💡 Features
 
 - **Natural language input** for describing your mood (e.g., "tragic but beautiful", "funny and romantic").
@@ -34,4 +49,21 @@ movies.csv
 genome-tags.csv
 
 genome-scores.csv
+
+
+---
+
+## 🛠️ Setup Instructions
+
+
+```bash
+git clone https://github.com/s4r1n4/MovieRec.git
+cd MovieRec
+```
+```
+pip install -r requirements.txt
+```
+```
+streamlit run streamlit_app.py
+```
 
